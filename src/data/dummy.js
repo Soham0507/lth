@@ -64,7 +64,7 @@ export const DATES = buildDates()
 export const SLOTS = [
   { id: '20:00', label: '8:00 PM', status: 'open' },
   { id: '20:15', label: '8:15 PM', status: 'open' },
-  { id: '20:30', label: '8:30 PM', status: 'busy' },
+  { id: '20:30', label: '8:30 PM', status: 'open' },
   { id: '20:45', label: '8:45 PM', status: 'open' },
   { id: '21:00', label: '9:00 PM', status: 'open' },
   { id: '21:15', label: '9:15 PM', status: 'full' },
