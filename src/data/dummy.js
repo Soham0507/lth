@@ -35,13 +35,30 @@ export const DONATION_TIERS = [
 ]
 
 // Booking windows the bridge is open for public control.
-export const DATES = [
-  { id: '2026-06-26', label: 'Fri, Jun 26', tag: 'Friday Night Lights' },
-  { id: '2026-06-27', label: 'Sat, Jun 27', tag: null },
-  { id: '2026-06-28', label: 'Sun, Jun 28', tag: null },
-  { id: '2026-07-03', label: 'Fri, Jul 3', tag: 'Sponsored: free moments' },
-  { id: '2026-07-04', label: 'Sat, Jul 4', tag: null, blackout: true },
-]
+// Generated dynamically from today forward — no past dates.
+function buildDates(count = 7) {
+  const dayMs = 24 * 60 * 60 * 1000
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dates = []
+  for (let i = 0; i < count; i++) {
+    const d = new Date(today.getTime() + i * dayMs)
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'short' })
+    const month = d.toLocaleDateString('en-US', { month: 'short' })
+    dates.push({
+      id: `${yyyy}-${mm}-${dd}`,
+      label: `${weekday}, ${month} ${d.getDate()}`,
+      // Fridays get the signature event tag.
+      tag: d.getDay() === 5 ? 'Friday Night Lights' : null,
+    })
+  }
+  return dates
+}
+
+export const DATES = buildDates()
 
 // Time slots per evening window. Some sold out / blacked out.
 export const SLOTS = [
