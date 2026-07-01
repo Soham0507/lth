@@ -5,7 +5,7 @@ import { Calendar, Clock, HandCoins, Star, Check, ArrowRight } from 'lucide-reac
 import Header from '../components/Header.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { Reveal, StaggerGroup, StaggerItem } from '../components/Reveal.jsx'
-import { DATES, SLOTS, DONATION_TIERS } from '../data/dummy.js'
+import { DATES, SESSION_WINDOW, DONATION_TIERS } from '../data/dummy.js'
 
 export default function Booking() {
   const navigate = useNavigate()
@@ -13,20 +13,18 @@ export default function Booking() {
 
   const firstOpenDate = DATES.find((d) => !d.blackout)?.id
   const [date, setDate] = useState(firstOpenDate)
-  const [slot, setSlot] = useState(null)
   const [tier, setTier] = useState('glow')
 
   const selectedDate = DATES.find((d) => d.id === date)
-  const selectedSlot = SLOTS.find((s) => s.id === slot)
   const selectedTier = DONATION_TIERS.find((t) => t.id === tier)
 
-  const ready = date && slot && tier
+  const ready = date && tier
 
   const next = () => {
     setBooking({
       date: selectedDate.label,
       dateTag: selectedDate.tag,
-      slot: selectedSlot.label,
+      window: SESSION_WINDOW,
       tier: selectedTier,
     })
     navigate('/payment')
@@ -61,29 +59,15 @@ export default function Booking() {
         </motion.div>
       )}
 
-      <Reveal as="p" className="section-label">
-        <span className="lbl-badge"><Clock size={13} strokeWidth={2.5} /></span>
-        2 · Choose a time slot
+      <Reveal className="session-window-row">
+        <Clock size={14} strokeWidth={2.5} />
+        <span>Session window · <strong>{SESSION_WINDOW}</strong></span>
+        <span className="session-window-note">You'll join the live queue when you arrive</span>
       </Reveal>
-      <StaggerGroup className="slot-grid">
-        {SLOTS.map((s) => (
-          <StaggerItem
-            key={s.id}
-            className={`slot ${slot === s.id ? 'active' : ''} ${s.status === 'full' ? 'full' : ''} ${s.status === 'busy' ? 'busy' : ''}`}
-            onClick={() => s.status !== 'full' && setSlot(s.id)}
-            whileTap={s.status !== 'full' ? { scale: 0.94 } : {}}
-          >
-            {s.label}
-            <span className="slot-sub">
-              {s.status === 'full' ? 'Sold out' : s.status === 'busy' ? 'Filling up' : 'Available'}
-            </span>
-          </StaggerItem>
-        ))}
-      </StaggerGroup>
 
       <Reveal as="p" className="section-label">
         <span className="lbl-badge"><HandCoins size={13} strokeWidth={2.5} /></span>
-        3 · Select a donation tier
+        2 · Select a donation tier
       </Reveal>
       <StaggerGroup className="stack-12">
         {DONATION_TIERS.map((t) => (
@@ -111,7 +95,7 @@ export default function Booking() {
       <div className="footer-cta">
         <motion.button className="btn btn-primary" disabled={!ready} onClick={next}
           whileHover={ready ? { y: -2 } : {}} whileTap={ready ? { scale: 0.97 } : {}}>
-          {ready ? <>Continue · ${selectedTier.price}<ArrowRight size={18} strokeWidth={2.5} /></> : 'Pick date, time & tier'}
+          {ready ? <>Continue · ${selectedTier.price}<ArrowRight size={18} strokeWidth={2.5} /></> : 'Pick a date & tier'}
         </motion.button>
       </div>
     </div>

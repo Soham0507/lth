@@ -245,28 +245,16 @@ body {
 }
 .date-pill.blackout { opacity: 0.35; cursor: not-allowed; }
 
-/* ---- Slot grid ---- */
-.slot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.slot {
-  padding: 15px 6px;
-  border-radius: 14px;
-  background: var(--surface);
-  backdrop-filter: var(--blur);
-  border: 1.5px solid var(--line);
-  text-align: center;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 14px;
-  transition: border-color 0.15s, background 0.15s;
+/* ---- Session window info row ---- */
+.session-window-row {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px;
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  background: var(--surface); border: 1px solid var(--line);
+  font-size: 13px; color: var(--muted);
+  margin-bottom: 4px;
 }
-.slot .slot-sub { display: block; font-size: 10px; font-weight: 600; color: var(--muted-2); margin-top: 4px; }
-.slot.active {
-  border-color: transparent;
-  background: linear-gradient(var(--bg-2), var(--bg-2)) padding-box, var(--grad) border-box;
-  box-shadow: 0 0 24px rgba(34,211,238,0.3);
-}
-.slot.busy { color: var(--warn); }
-.slot.full { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+.session-window-row strong { color: var(--text); font-weight: 700; }
+.session-window-note { font-size: 11px; color: var(--muted-2); flex-basis: 100%; }
 
 /* ---- Tier cards ---- */
 .tier {
