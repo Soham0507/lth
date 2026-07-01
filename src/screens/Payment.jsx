@@ -48,7 +48,7 @@ export default function Payment() {
             <span className="v">${booking.tier.price.toFixed(2)}</span>
           </div>
           <div className="summary-row">
-            <span className="k">{booking.date} · {booking.window}</span>
+            <span className="k">{booking.date} · {booking.slot}</span>
             <span className="v">—</span>
           </div>
           <div className="summary-row">

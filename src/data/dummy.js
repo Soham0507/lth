@@ -60,8 +60,17 @@ function buildDates(count = 7) {
 
 export const DATES = buildDates()
 
-// Evening session window — all bookings join the live queue for this window.
-export const SESSION_WINDOW = '8:00 – 10:00 PM'
+// Time slots per evening window. Some sold out / blacked out.
+export const SLOTS = [
+  { id: '20:00', label: '8:00 PM', status: 'open' },
+  { id: '20:15', label: '8:15 PM', status: 'open' },
+  { id: '20:30', label: '8:30 PM', status: 'open' },
+  { id: '20:45', label: '8:45 PM', status: 'open' },
+  { id: '21:00', label: '9:00 PM', status: 'open' },
+  { id: '21:15', label: '9:15 PM', status: 'full' },
+  { id: '21:30', label: '9:30 PM', status: 'open' },
+  { id: '21:45', label: '9:45 PM', status: 'open' },
+]
 
 // Lighting zones on the Hoan Bridge.
 export const ZONES = [

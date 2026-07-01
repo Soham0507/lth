@@ -22,17 +22,14 @@ export default function Queue() {
 
   const yourTurn = pos <= 0
   const total = 4
-
-  // Duration-aware wait: each person ahead has the same tier duration as you.
-  const tierMins = parseInt(booking.tier.duration) || 5
-  const wait = pos * tierMins
+  const wait = pos * 5 // rough minutes (Glow tier = 5 min each)
 
   return (
     <div className="screen pad-top center">
       <Header title="Queue" back="/" />
 
       <div className="badge-live" style={{ justifyContent: 'center', marginTop: 6 }}>
-        Live · {booking.date} · {booking.window}
+        Live · {booking.date} · {booking.slot}
       </div>
 
       <motion.div
@@ -81,7 +78,7 @@ export default function Queue() {
         <p className="lead">
           {yourTurn
             ? 'Tap below to start your session. Your timer begins the moment you enter.'
-            : "Keep this screen open. We\u2019ll move you up automatically as people finish."}
+            : 'Keep this screen open. We’ll move you up automatically as people finish.'}
         </p>
       </Reveal>
 

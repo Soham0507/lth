@@ -38,8 +38,8 @@ export default function Confirmation() {
             <span className="v">{booking.date}</span>
           </div>
           <div className="summary-row">
-            <span className="k">Session window</span>
-            <span className="v">{booking.window}</span>
+            <span className="k">Time slot</span>
+            <span className="v">{booking.slot}</span>
           </div>
           <div className="summary-row">
             <span className="k">Tier</span>
@@ -70,7 +70,7 @@ export default function Confirmation() {
             Back to home
           </motion.button>
         </div>
-        <p className="note">Arrive a few minutes before the window opens to claim your turn.</p>
+        <p className="note">Arrive a few minutes before your slot to claim your turn.</p>
       </Reveal>
     </div>
   )
