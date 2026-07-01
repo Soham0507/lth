@@ -353,7 +353,7 @@ body {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   transition: color 0.2s;
 }
-.tab.active { color: #08070c; }
+.tab.active { color: #fff; }
 .tab-indicator {
   position: absolute; inset: 5px;
   width: calc(50% - 5px);
@@ -457,7 +457,7 @@ body {
   display: flex; align-items: center; gap: 13px;
   padding: 14px 15px; border-radius: 17px;
   background: var(--surface); backdrop-filter: var(--blur); border: 1.5px solid var(--line);
-  cursor: pointer; text-align: left;
+  cursor: pointer; text-align: left; color: var(--text);
   transition: border-color 0.15s, background 0.15s;
 }
 .show-card:hover { background: var(--surface-hover); }
