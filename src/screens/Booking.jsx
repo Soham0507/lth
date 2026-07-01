@@ -9,7 +9,7 @@ import { DATES, SLOTS, DONATION_TIERS } from '../data/dummy.js'
 
 export default function Booking() {
   const navigate = useNavigate()
-  const { setBooking } = useApp()
+  const { setBooking, isSlotTaken } = useApp()
 
   const firstOpenDate = DATES.find((d) => !d.blackout)?.id
   const [date, setDate] = useState(firstOpenDate)
@@ -25,8 +25,10 @@ export default function Booking() {
   const next = () => {
     setBooking({
       date: selectedDate.label,
+      dateId: selectedDate.id,
       dateTag: selectedDate.tag,
       slot: selectedSlot.label,
+      slotId: selectedSlot.id,
       tier: selectedTier,
     })
     navigate('/payment')
@@ -66,19 +68,20 @@ export default function Booking() {
         2 · Choose a time slot
       </Reveal>
       <StaggerGroup className="slot-grid">
-        {SLOTS.map((s) => (
-          <StaggerItem
-            key={s.id}
-            className={`slot ${slot === s.id ? 'active' : ''} ${s.status === 'full' ? 'full' : ''} ${s.status === 'busy' ? 'busy' : ''}`}
-            onClick={() => s.status !== 'full' && setSlot(s.id)}
-            whileTap={s.status !== 'full' ? { scale: 0.94 } : {}}
-          >
-            {s.label}
-            <span className="slot-sub">
-              {s.status === 'full' ? 'Sold out' : s.status === 'busy' ? 'Filling up' : 'Available'}
-            </span>
-          </StaggerItem>
-        ))}
+        {SLOTS.map((s) => {
+          const taken = s.status === 'full' || (date && isSlotTaken(date, s.id))
+          return (
+            <StaggerItem
+              key={s.id}
+              className={`slot ${slot === s.id ? 'active' : ''} ${taken ? 'full' : ''}`}
+              onClick={() => !taken && setSlot(s.id)}
+              whileTap={!taken ? { scale: 0.94 } : {}}
+            >
+              {s.label}
+              <span className="slot-sub">{taken ? 'Sold out' : 'Available'}</span>
+            </StaggerItem>
+          )
+        })}
       </StaggerGroup>
 
       <Reveal as="p" className="section-label">

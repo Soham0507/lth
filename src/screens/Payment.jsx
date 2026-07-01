@@ -15,7 +15,7 @@ const fmtExp = (v) => {
 
 export default function Payment() {
   const navigate = useNavigate()
-  const { booking, setPaid } = useApp()
+  const { booking, setPaid, bookSlot } = useApp()
   const [card, setCard] = useState('4242 4242 4242 4242')
   const [exp, setExp] = useState('12/28')
   const [cvc, setCvc] = useState('123')
@@ -33,6 +33,7 @@ export default function Payment() {
     // Dummy "Stripe" call.
     setTimeout(() => {
       setPaid(true)
+      bookSlot(booking.dateId, booking.slotId)
       navigate('/confirmation')
     }, 1400)
   }

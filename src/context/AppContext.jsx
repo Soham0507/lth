@@ -4,8 +4,9 @@ const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null) // { name, email }
-  const [booking, setBooking] = useState(null) // { date, slot, tier }
+  const [booking, setBooking] = useState(null) // { date, dateId, slot, slotId, tier }
   const [paid, setPaid] = useState(false)
+  const [bookedSlots, setBookedSlots] = useState(new Set()) // Set of "dateId|slotId"
 
   const login = (profile) => setUser(profile)
   const logout = () => {
@@ -14,9 +15,15 @@ export function AppProvider({ children }) {
     setPaid(false)
   }
 
+  const bookSlot = (dateId, slotId) => {
+    setBookedSlots((prev) => new Set([...prev, `${dateId}|${slotId}`]))
+  }
+
+  const isSlotTaken = (dateId, slotId) => bookedSlots.has(`${dateId}|${slotId}`)
+
   return (
     <AppContext.Provider
-      value={{ user, setUser, login, logout, booking, setBooking, paid, setPaid }}
+      value={{ user, setUser, login, logout, booking, setBooking, paid, setPaid, bookSlot, isSlotTaken }}
     >
       {children}
     </AppContext.Provider>
