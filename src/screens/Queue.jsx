@@ -5,6 +5,8 @@ import { PartyPopper, Play } from 'lucide-react'
 import Header from '../components/Header.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { Reveal } from '../components/Reveal.jsx'
+import { SponsorLine } from '../components/SponsorMark.jsx'
+import { occasionById } from '../data/sample.js'
 
 export default function Queue() {
   const navigate = useNavigate()
@@ -85,6 +87,10 @@ export default function Queue() {
       <Reveal delay={0.18} className="card" style={{ marginTop: 18, textAlign: 'left' }}>
         <div className="summary">
           <div className="summary-row">
+            <span className="k">Your moment</span>
+            <span className="v">{booking.momentName || occasionById(booking.occasionId)?.name || 'Hoan session'}</span>
+          </div>
+          <div className="summary-row">
             <span className="k">Your tier</span>
             <span className="v">{booking.tier.name}</span>
           </div>
@@ -94,6 +100,10 @@ export default function Queue() {
           </div>
         </div>
       </Reveal>
+
+      {booking.sponsorId && (
+        <div className="credit-bar"><SponsorLine label={`${booking.dateTag} presented by`} id={booking.sponsorId} /></div>
+      )}
 
       <div className="fill" />
 

@@ -1,217 +1,190 @@
-// SVG model of the Hoan Bridge: tied arch, vertical hangers with a diagonal V-brace at each spring, LED deck rail.
-export default function BridgeArt({ cables = '#3da9fc', towers = '#ffd166', deck = '#ef476f' }) {
-  const LX = 353, RX = 1087     // arch spring x-positions — central main span only, flanked by flat approaches
-  const DY = 340                 // deck y-level
-  const RISE = 100               // arch apex height above deck — basket-handle profile
-  const WATER_Y = 372            // water surface y
-  const MID = (LX + RX) / 2
-  const HALF = (RX - LX) / 2
+import { useId } from 'react'
 
-  // Parabolic arch profile: DY at the springs, DY-RISE at the apex
-  const archY = (x) => DY - RISE * (1 - ((x - MID) / HALF) ** 2)
+// The Hoan Bridge as a line graphic with three independently-lit parts:
+//   deck      → "Deck Lights" (the two long rails)
+//   verticals → "Verticals"   (hanger cables between the deck and the arch, and under the approaches)
+//   arch      → "Arch"        (the main arch plus the curved approach spans)
+// Geometry is traced from the official graphic (938 × 170 units).
 
-  const archNodeXs = [...Array(34)].map((_, i) => LX + (i * (RX - LX)) / 33)
-  const archPath = `M ${LX} ${DY} ${archNodeXs.map((x) => `L ${x.toFixed(1)} ${archY(x).toFixed(1)}`).join(' ')} L ${RX} ${DY}`
+const SPRING_L = 178
+const SPRING_R = 782
+const SPRING_Y = 160
+const MID = (SPRING_L + SPRING_R) / 2
+const HALF = (SPRING_R - SPRING_L) / 2
+const APEX = 8
+const DECK_TOP = 78
+const DECK_BOT = 93
+const W = 938
 
-  // Vertical hangers across the mid-span
-  const vHangerXs = [...Array(11)].map((_, i) => LX + 190 + (i * (RX - LX - 380)) / 10)
+const archY = (x) => SPRING_Y - (SPRING_Y - APEX) * (1 - Math.abs((x - MID) / HALF) ** 2.1)
+const leftCurveY = (x) => 95 + 65 * ((x - 2) / (SPRING_L - 2)) ** 1.5
+const rightCurveY = (x) => 95 + 63 * ((W - 2 - x) / (W - 2 - SPRING_R)) ** 1.5
 
-  // Diagonal end-brace fan: from a vertex near each pier, cables splay up to a few points on the arch
-  const fanTargets = [45, 95, 150]
-  const leftFan = fanTargets.map((d) => [LX + 12, LX + d])
-  const rightFan = fanTargets.map((d) => [RX - 12, RX - d])
+const trace = (fn, x0, x1, n = 48) =>
+  `M ${x0} ${fn(x0).toFixed(1)} ` +
+  [...Array(n)].map((_, i) => {
+    const x = x0 + ((i + 1) * (x1 - x0)) / n
+    return `L ${x.toFixed(1)} ${fn(x).toFixed(1)}`
+  }).join(' ')
 
-  // Deck rail bulbs — one string of individual lights spanning the full deck
-  const deckBulbXs = [...Array(46)].map((_, i) => 14 + i * (1440 - 28) / 45)
+const ARCH_PATH = trace(archY, SPRING_L, SPRING_R, 80)
+const LEFT_APPROACH = trace(leftCurveY, 2, SPRING_L, 36)
+const RIGHT_APPROACH = trace(rightCurveY, SPRING_R, W - 2, 36)
 
-  // City skylines flanking the bridge on both shores — deterministic heights/widths
-  const GROUND_Y = DY - 6
-  const buildBlock = (count, startX, span, dir) =>
-    [...Array(count)].map((_, i) => {
-      const w = 14 + (i % 4) * 6
-      const h = 42 + ((i * 53) % 110)
-      const x = dir > 0 ? startX + (i * span) / count : startX + span - ((i + 1) * span) / count
-      return { x, w, h, i }
-    })
-  const lBuildings = buildBlock(11, 4, LX - 24, 1)
-  const rBuildings = buildBlock(11, RX + 20, 1440 - RX - 24, -1)
-  const buildingWindows = (b) => {
-    const rows = Math.max(2, Math.floor((b.h - 10) / 14))
-    const cols = Math.max(1, Math.floor((b.w - 4) / 8))
-    const out = []
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        if ((b.i * 7 + r * 3 + c * 5) % 3 === 0) continue
-        out.push([
-          b.x + 3 + c * 8,
-          GROUND_Y - b.h + 6 + r * 14,
-          0.12 + ((b.i + r + c) % 5) * 0.05,
-        ])
-      }
-    }
-    return out
+// Hangers: [x, yTop, yBottom]
+const VERTICALS = [
+  ...[328, 373, 418, 462, 507, 551, 596, 641].map((x) => [x, archY(x), DECK_TOP]),
+  ...[88, 126, 175].map((x) => [x, DECK_BOT, leftCurveY(x)]),
+  [212, DECK_BOT, archY(212)],
+  [752, DECK_BOT, archY(752)],
+  ...[787, 822, 860].map((x) => [x, DECK_BOT, rightCurveY(x)]),
+]
+
+// Deterministic pseudo-random so effect dots sit in the same place on every render.
+const rnd = (i, salt = 1) => {
+  const v = Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453
+  return v - Math.floor(v)
+}
+
+const SPARKLES = [...Array(46)].map((_, i) => {
+  const kind = i % 3
+  let x, y
+  if (kind === 0) { x = 8 + rnd(i) * (W - 16); y = rnd(i, 2) > 0.5 ? DECK_TOP : DECK_BOT }
+  else if (kind === 1) { x = SPRING_L + 10 + rnd(i) * (SPRING_R - SPRING_L - 20); y = archY(x) }
+  else { const v = VERTICALS[Math.floor(rnd(i, 3) * 8)]; x = v[0]; y = v[1] + rnd(i, 4) * (v[2] - v[1]) }
+  return { x, y, d: rnd(i, 5) * 2.4, r: 1.8 + rnd(i, 6) * 1.6 }
+})
+
+const CONFETTI_COLORS = ['#ef476f', '#ffd166', '#06d6a0', '#3da9fc', '#f72585', '#a855f7', '#ffffff', '#ff6b35']
+const CONFETTI = [...Array(40)].map((_, i) => ({
+  x: 10 + rnd(i, 7) * (W - 20),
+  y: 4 + rnd(i, 8) * 158,
+  d: rnd(i, 9) * 2.6,
+  c: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+  r: 2 + rnd(i, 10) * 2.2,
+}))
+
+const ZONE_ORDER = ['deck', 'verticals', 'arch']
+const LABELS = {
+  deck: { text: 'DECK LIGHTS', x: 125, y: 56 },
+  verticals: { text: 'VERTICALS', x: 551, y: 52 },
+  arch: { text: 'ARCH', x: MID, y: -14 },
+}
+
+export default function BridgeArt({
+  deck = '#ef476f',
+  verticals = '#3da9fc',
+  arch = '#ffd166',
+  effect = 'steady',
+  active = null,       // zone id to spotlight; the other zones dim
+  labels = false,      // show the active zone's name on the graphic
+  onSelect,            // (zoneId) => void — makes each part of the bridge tappable
+  className = '',
+  title = 'Hoan Bridge lighting preview',
+}) {
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
+  const colors = { deck, verticals, arch }
+  const glowId = `glow${uid}`
+  const dimmed = (z) => active && active !== z
+
+  const shapes = (z) => {
+    if (z === 'deck') return (
+      <>
+        <line x1="2" y1={DECK_TOP} x2={W - 2} y2={DECK_TOP} />
+        <line x1="2" y1={DECK_BOT} x2={W - 2} y2={DECK_BOT} />
+      </>
+    )
+    if (z === 'verticals') return VERTICALS.map(([x, y1, y2], i) => (
+      <line key={i} x1={x} y1={y1} x2={x} y2={y2} className="vline" style={{ '--vx': x / W }} />
+    ))
+    return (
+      <>
+        <path d={ARCH_PATH} />
+        <path d={LEFT_APPROACH} />
+        <path d={RIGHT_APPROACH} />
+      </>
+    )
   }
 
+  const widths = { deck: 5, verticals: 4.5, arch: 6.5 }
+
   return (
-    <svg viewBox="0 0 1440 580" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      className={`bridge-svg fx-${effect} ${className}`}
+      viewBox="-8 -46 954 226"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label={title}
+    >
       <defs>
-        {/* Arch glow */}
-        <filter id="fg-arch" x="-40%" y="-120%" width="180%" height="340%">
-          <feGaussianBlur stdDeviation="8" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        <filter id={glowId} filterUnits="userSpaceOnUse" x="-30" y="-40" width="1000" height="240">
+          <feGaussianBlur stdDeviation="6" result="b" />
+          <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
-        {/* Hanger cable glow — fixed userSpace region so it doesn't collapse on
-            perfectly vertical/horizontal lines, whose objectBoundingBox has a zero dimension */}
-        <filter id="fg-hang" filterUnits="userSpaceOnUse" x="-20" y="-20" width="1480" height="620">
-          <feGaussianBlur stdDeviation="2.4" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        {/* Lamp point glow */}
-        <filter id="fs" x="-600%" y="-600%" width="1300%" height="1300%">
-          <feGaussianBlur stdDeviation="7" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <clipPath id="above-deck">
-          <rect x="0" y="0" width="1440" height={DY}/>
-        </clipPath>
-
-        <linearGradient id="bg-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#1c2a38"/>
-          <stop offset="55%"  stopColor="#22333f"/>
-          <stop offset="100%" stopColor="#2c3f49"/>
-        </linearGradient>
-        <linearGradient id="bg-water" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#101d24"/>
-          <stop offset="100%" stopColor="#060d12"/>
-        </linearGradient>
-        <linearGradient id="deck-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#6a7a86"/>
-          <stop offset="100%" stopColor="#3a4a56"/>
-        </linearGradient>
-        <linearGradient id="pier-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#485462"/>
-          <stop offset="100%" stopColor="#2a3340"/>
-        </linearGradient>
-
-        <radialGradient id="cgl" cx="8%" cy="95%" r="26%">
-          <stop offset="0%"   stopColor="#0f1a22" stopOpacity="0.7"/>
-          <stop offset="100%" stopColor="#1c2a38" stopOpacity="0"/>
-        </radialGradient>
-        <radialGradient id="cgr" cx="92%" cy="95%" r="26%">
-          <stop offset="0%"   stopColor="#0f1a22" stopOpacity="0.7"/>
-          <stop offset="100%" stopColor="#1c2a38" stopOpacity="0"/>
-        </radialGradient>
       </defs>
 
-      {/* ── Dusk sky ── */}
-      <rect width="1440" height="580" fill="url(#bg-sky)"/>
-      <rect width="1440" height="580" fill="url(#cgl)"/>
-      <rect width="1440" height="580" fill="url(#cgr)"/>
-
-      {/* ── Left city skyline ── */}
-      {lBuildings.map((b) => (
-        <rect key={b.i} x={b.x} y={GROUND_Y - b.h} width={b.w} height={b.h} fill="#0a151c" opacity="0.94"/>
-      ))}
-      {lBuildings.flatMap((b) => buildingWindows(b)).map(([x, y, op], i) => (
-        <rect key={i} x={x} y={y} width={3.5} height={6} fill="#ffd580" opacity={op} rx="0.5"/>
-      ))}
-      <g>
-        <rect x="118" y="300" width="7" height="34" fill="#0a151c"/>
-        <rect x="115" y="288" width="13" height="14" rx="2" fill="#7a2e2e"/>
-        <circle cx="121.5" cy="291" r="2.2" fill="#ff5a4d" filter="url(#fs)" opacity="0.85"/>
-      </g>
-      <rect x="0"  y={DY - 6}  width={LX}   height={14} fill="#0b161e" opacity="0.96"/>
-      <rect x="0"  y={DY + 6}  width={LX - 26} height={WATER_Y - DY - 6} fill="#0a151c" opacity="0.9"/>
-
-      {/* ── Right city skyline ── */}
-      {rBuildings.map((b) => (
-        <rect key={b.i} x={b.x} y={GROUND_Y - b.h} width={b.w} height={b.h} fill="#0a151c" opacity="0.94"/>
-      ))}
-      {rBuildings.flatMap((b) => buildingWindows(b)).map(([x, y, op], i) => (
-        <rect key={i} x={x} y={y} width={3.5} height={6} fill="#ffd580" opacity={op} rx="0.5"/>
-      ))}
-      <rect x={RX} y={DY - 6} width={1440 - RX} height={14} fill="#0b161e" opacity="0.96"/>
-      <rect x={RX + 26} y={DY + 6} width={1440 - RX - 26} height={WATER_Y - DY - 6} fill="#0a151c" opacity="0.9"/>
-
-      {/* ── Lake ── */}
-      <rect y={WATER_Y} width="1440" height={580 - WATER_Y} fill="url(#bg-water)"/>
-      {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-        <line key={i} x1={20} y1={WATER_Y + 12 + i * 24} x2={1420} y2={WATER_Y + 12 + i * 24}
-          stroke="#0c1a22" strokeWidth="1.5" opacity={0.42 - i * 0.04}/>
-      ))}
-
-      {/* ── Hangers (cables): vertical mid-span + diagonal end-brace fans ── */}
-      <g clipPath="url(#above-deck)">
-        {vHangerXs.map((x, i) => (
-          <line key={i} x1={x} y1={DY} x2={x} y2={archY(x)}
-            stroke={cables} strokeWidth="2" filter="url(#fg-hang)" opacity="0.85"/>
-        ))}
-        {[...leftFan, ...rightFan].map(([dx, ax], i) => (
-          <line key={i} x1={dx} y1={DY} x2={ax} y2={archY(ax)}
-            stroke={cables} strokeWidth="2" filter="url(#fg-hang)" opacity="0.85"/>
-        ))}
-      </g>
-
-      {/* ── Main arch (towers color) — outer tube + inner truss tube near the crest ── */}
-      <g clipPath="url(#above-deck)">
-        <path d={archPath} fill="none" stroke={towers} strokeWidth="9" filter="url(#fg-arch)" opacity="0.7" strokeLinejoin="round"/>
-        <path d={archPath} fill="none" stroke={towers} strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.98"/>
-        {/* inner tube, offset below the outer arch, visible mainly at the crest */}
-        <path d={`M ${LX + 60} ${archY(LX + 60) + 16} ${archNodeXs.filter((x) => x > LX + 60 && x < RX - 60).map((x) => `L ${x.toFixed(1)} ${(archY(x) + 16).toFixed(1)}`).join(' ')} L ${RX - 60} ${archY(RX - 60) + 16}`}
-          fill="none" stroke={towers} strokeWidth="2.2" opacity="0.55"/>
-        {/* cross struts between the two tubes at the crest */}
-        {archNodeXs.filter((x) => x > MID - 150 && x < MID + 150 && Math.abs(x - MID) % 34 < 9).map((x, i) => (
-          <line key={i} x1={x} y1={archY(x)} x2={x} y2={archY(x) + 16} stroke={towers} strokeWidth="2" opacity="0.5"/>
-        ))}
-        {/* small bulbs along the arch */}
-        {archNodeXs.filter((_, i) => i % 3 === 0).map((x, i) => (
-          <circle key={i} cx={x} cy={archY(x)} r={2} fill="#fff" opacity="0.55"/>
-        ))}
-      </g>
-
-      {/* Aviation warning lights at apex */}
-      <circle cx={MID - 14} cy={archY(MID) - 4} r={2.4} fill="#ff4d4d" filter="url(#fs)" opacity="0.85"/>
-      <circle cx={MID + 14} cy={archY(MID) - 4} r={2.4} fill="#ff4d4d" filter="url(#fs)" opacity="0.85"/>
-
-      {/* ── Left approach deck + piers ── */}
-      <rect x="0" y={DY - 14} width={LX} height={20} fill="url(#deck-fill)" opacity="0.95"/>
-      {[90, 200, 300].map((x) => (
-        <g key={x}>
-          <rect x={x - 11} y={DY + 6} width={22} height={38} rx="3" fill="url(#pier-fill)"/>
-          <rect x={x - 8}  y={DY + 40} width={16} height={6}  rx="2" fill="#252e3c"/>
+      {ZONE_ORDER.map((z) => (
+        <g
+          key={z}
+          className={`bz bz-${z} ${dimmed(z) ? 'dim' : ''} ${active === z ? 'on' : ''}`}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ stroke: colors[z], strokeWidth: widths[z] }}
+        >
+          {/* spotlight halo behind the active part */}
+          {active === z && (
+            <g className="halo" style={{ strokeWidth: widths[z] + 12 }} filter={`url(#${glowId})`}>
+              {shapes(z)}
+            </g>
+          )}
+          <g filter={`url(#${glowId})`}>{shapes(z)}</g>
         </g>
       ))}
 
-      {/* ── Main span deck ── */}
-      <rect x={LX} y={DY - 14} width={RX - LX} height={20} fill="url(#deck-fill)"/>
-      <rect x={LX} y={DY - 7} width={RX - LX} height={3} fill="#334455" opacity="0.4"/>
-      {[...Array(5)].map((_, i) => (
-        <rect key={i} x={LX + 80 + i * 130} y={DY - 6} width={58} height={1.5}
-          fill="#8899aa" opacity="0.18"/>
-      ))}
-
-      {/* ── Right approach deck + piers ── */}
-      <rect x={RX} y={DY - 14} width={1440 - RX} height={20} fill="url(#deck-fill)" opacity="0.95"/>
-      {[1140, 1240, 1350].map((x) => (
-        <g key={x}>
-          <rect x={x - 11} y={DY + 6} width={22} height={38} rx="3" fill="url(#pier-fill)"/>
-          <rect x={x - 8}  y={DY + 40} width={16} height={6}  rx="2" fill="#252e3c"/>
+      {/* ── Effect overlays ── */}
+      {effect === 'sparkle' && (
+        <g className="fx-layer">
+          {SPARKLES.map((s, i) => (
+            <circle key={i} className="spark" cx={s.x} cy={s.y} r={s.r} fill="#fff" style={{ animationDelay: `${s.d}s` }} />
+          ))}
         </g>
-      ))}
-
-      {/* ── Arch base piers ── */}
-      <rect x={LX - 22} y={DY}      width={44} height={64} rx="6" fill="#485668"/>
-      <rect x={LX - 18} y={DY + 56} width={36} height={10} rx="3" fill="#343f4e"/>
-      <rect x={RX - 22} y={DY}      width={44} height={64} rx="6" fill="#485668"/>
-      <rect x={RX - 18} y={DY + 56} width={36} height={10} rx="3" fill="#343f4e"/>
-
-      {/* ── Deck rail bulbs ── */}
-      {deckBulbXs.map((x, i) => (
-        <g key={i}>
-          <circle cx={x} cy={DY - 6} r={3.2} fill={deck} filter="url(#fs)" opacity="0.85"/>
-          <circle cx={x} cy={DY - 6} r={1.3} fill="#fff" opacity="0.8"/>
+      )}
+      {effect === 'confetti' && (
+        <g className="fx-layer">
+          {CONFETTI.map((s, i) => (
+            <circle key={i} className="confetto" cx={s.x} cy={s.y} r={s.r} fill={s.c} style={{ animationDelay: `${s.d}s` }} />
+          ))}
         </g>
-      ))}
+      )}
+      {effect === 'waves' && (
+        <g className="fx-layer chasers" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round">
+          <line x1="2" y1={DECK_TOP} x2={W - 2} y2={DECK_TOP} pathLength="100" className="chase" />
+          <line x1="2" y1={DECK_BOT} x2={W - 2} y2={DECK_BOT} pathLength="100" className="chase rev" />
+          <path d={ARCH_PATH} pathLength="100" className="chase" />
+        </g>
+      )}
+
+      {/* Active-part label */}
+      {labels && active && (() => {
+        const l = LABELS[active]
+        const w = l.text.length * 16.5 + 30
+        return (
+          <g className="zone-label" pointerEvents="none">
+            <rect x={l.x - w / 2} y={l.y - 27} width={w} height="38" rx="19" />
+            <text x={l.x} y={l.y} textAnchor="middle">{l.text}</text>
+          </g>
+        )
+      })()}
+
+      {/* Tap targets */}
+      {onSelect && (
+        <g fill="none" stroke="transparent" strokeWidth="24" strokeLinecap="round" style={{ cursor: 'pointer' }}>
+          <g onClick={() => onSelect('verticals')}>{shapes('verticals')}</g>
+          <g onClick={() => onSelect('arch')}>{shapes('arch')}</g>
+          <g onClick={() => onSelect('deck')}>{shapes('deck')}</g>
+        </g>
+      )}
     </svg>
   )
 }

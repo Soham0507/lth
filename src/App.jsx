@@ -29,7 +29,8 @@ export default function App() {
         <Route path="/confirmation" element={<Protected>{page(<Confirmation />)}</Protected>} />
         <Route path="/queue" element={<Protected>{page(<Queue />)}</Protected>} />
         <Route path="/control" element={<Protected>{page(<Control />)}</Protected>} />
-        <Route path="/try" element={page(<Control demo />)} />
+        <Route path="/design" element={<Protected>{page(<Control mode="design" />)}</Protected>} />
+        <Route path="/try" element={page(<Control mode="demo" />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>

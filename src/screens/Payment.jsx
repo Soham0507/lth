@@ -5,6 +5,8 @@ import { User, CreditCard, Calendar, ShieldCheck, Lock, Loader2 } from 'lucide-r
 import Header from '../components/Header.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { Reveal } from '../components/Reveal.jsx'
+import { SponsorLine } from '../components/SponsorMark.jsx'
+import { occasionById } from '../data/sample.js'
 
 // Light formatting helpers for the dummy card form.
 const fmtCard = (v) => v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim()
@@ -52,6 +54,12 @@ export default function Payment() {
             <span className="k">{booking.date} · {booking.slot}</span>
             <span className="v">—</span>
           </div>
+          {booking.occasionId && (
+            <div className="summary-row">
+              <span className="k">{booking.momentName || occasionById(booking.occasionId).name}</span>
+              <span className="v">{occasionById(booking.occasionId).name}</span>
+            </div>
+          )}
           <div className="summary-row">
             <span className="k">Processing fee</span>
             <span className="v">${fee.toFixed(2)}</span>
@@ -113,6 +121,9 @@ export default function Payment() {
             <ShieldCheck size={13} strokeWidth={2.5} style={{ verticalAlign: -2, marginRight: 4 }} />
             Dummy checkout · test card prefilled · no real charge
           </p>
+          <div className="credit-bar" style={{ marginTop: 10 }}>
+            <SponsorLine label="Experience technology by" id="founding" />
+          </div>
         </div>
       </Reveal>
     </div>

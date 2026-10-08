@@ -1,27 +1,50 @@
 import { useEffect, useState, useRef } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { TimerReset, Palette, Music, Play, Square, Clock3, BookOpen, Home as HomeIcon, Plus, Pencil, Upload, X } from 'lucide-react'
+import {
+  TimerReset, Palette, Music, Play, Square, Clock3, BookOpen, Home as HomeIcon, Plus, Pencil, Upload, X,
+  Sparkles, Wand2, Check,
+} from 'lucide-react'
 import Header from '../components/Header.jsx'
 import BridgeArt from '../components/BridgeArt.jsx'
+import { SponsorMark, SponsorLine } from '../components/SponsorMark.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { ZONES, TRACKS, SWATCHES } from '../data/dummy.js'
+import { OCCASIONS, EFFECTS, SPONSORS, effectById, occasionById } from '../data/sample.js'
 import { Reveal, StaggerGroup, StaggerItem } from '../components/Reveal.jsx'
 
 const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+const defaultColors = () => Object.fromEntries(ZONES.map((z) => [z.id, z.defaultColor]))
 
-export default function Control({ demo = false }) {
+// Tiny line icon for each lighting zone, drawn in that zone's current color.
+function ZoneIcon({ id, color }) {
+  const common = { fill: 'none', stroke: color, strokeWidth: 2.4, strokeLinecap: 'round' }
+  return (
+    <span className="zone-icon">
+      <svg viewBox="0 0 30 20">
+        {id === 'deck' && <><line x1="1" y1="8" x2="29" y2="8" {...common} /><line x1="1" y1="13" x2="29" y2="13" {...common} /></>}
+        {id === 'verticals' && [5, 11, 17, 23].map((x) => <line key={x} x1={x} y1="3" x2={x} y2="17" {...common} />)}
+        {id === 'arch' && <path d="M2 17 Q15 -7 28 17" {...common} />}
+      </svg>
+    </span>
+  )
+}
+
+// mode: 'live' (booked session) · 'demo' (public try-it) · 'design' (pre-session "make it yours")
+export default function Control({ mode = 'live' }) {
   const navigate = useNavigate()
-  const { booking } = useApp()
+  const { booking, design, setDesign } = useApp()
+  const isDemo = mode === 'demo'
+  const isDesign = mode === 'design'
 
   // Session length from tier (e.g. "5 min" -> 300s). Short for demo feel.
-  const mins = booking ? parseInt(booking.tier.duration) || 5 : (demo ? 30 : 5)
+  const mins = booking ? parseInt(booking.tier.duration) || 5 : (isDemo ? 30 : 5)
   const [left, setLeft] = useState(mins * 60)
 
-  const [tab, setTab] = useState('colors') // colors | shows
-  const [colors, setColors] = useState(
-    Object.fromEntries(ZONES.map((z) => [z.id, z.defaultColor]))
-  )
+  const seed = isDemo ? null : design
+  const [tab, setTab] = useState('colors') // colors | effects | music
+  const [colors, setColors] = useState(seed?.colors ?? defaultColors())
+  const [effectId, setEffectId] = useState(seed?.effectId ?? 'steady')
   const [activeZone, setActiveZone] = useState(ZONES[0].id)
   const [toast, setToast] = useState(null)
   const toastTimer = useRef(null)
@@ -34,12 +57,12 @@ export default function Control({ demo = false }) {
   const fileInputRef = useRef(null)
   const audioRef = useRef(null)
 
-  // Countdown.
+  // Countdown (not used while designing ahead of the reserved time).
   useEffect(() => {
-    if (left <= 0) return
+    if (isDesign || left <= 0) return
     const t = setInterval(() => setLeft((s) => s - 1), 1000)
     return () => clearInterval(t)
-  }, [left])
+  }, [left, isDesign])
 
   // Release the uploaded file's object URL when it changes or the screen unmounts.
   useEffect(() => () => { if (customTrack?.url) URL.revokeObjectURL(customTrack.url) }, [customTrack])
@@ -47,14 +70,28 @@ export default function Control({ demo = false }) {
   const flash = (msg) => {
     setToast(msg)
     clearTimeout(toastTimer.current)
-    toastTimer.current = setTimeout(() => setToast(null), 1600)
+    toastTimer.current = setTimeout(() => setToast(null), 2000)
   }
 
-  if (!booking && !demo) return <Navigate to="/book" replace />
+  if (!booking && !isDemo) return <Navigate to="/book" replace />
+
+  const zoneName = (id) => ZONES.find((z) => z.id === id).name
+  const effect = effectById(effectId)
 
   const setZoneColor = (hex) => {
     setColors((c) => ({ ...c, [activeZone]: hex }))
-    flash(`${ZONES.find((z) => z.id === activeZone).name} → ${hex.toUpperCase()}`)
+    flash(`${zoneName(activeZone)} → ${hex.toUpperCase()}`)
+  }
+
+  const chooseEffect = (e) => {
+    setEffectId(e.id)
+    flash(e.sponsorId ? `${e.name} — made possible by ${SPONSORS[e.sponsorId].name}` : `${e.name} on`)
+  }
+
+  const applyOccasion = (o) => {
+    setColors({ ...o.palette })
+    setEffectId(o.effect)
+    flash(`${o.name} look applied`)
   }
 
   const playTrack = (id, src, name) => {
@@ -102,8 +139,13 @@ export default function Control({ demo = false }) {
     setCustomTrack(null)
   }
 
-  const ended = left <= 0
-  const warn = left <= 30 && !ended
+  const savePlan = () => {
+    setDesign({ colors, effectId })
+    navigate('/confirmation')
+  }
+
+  const ended = !isDesign && left <= 0
+  const warn = !isDesign && left <= 30 && !ended
   const isCustom = !SWATCHES.some((hex) => hex.toLowerCase() === colors[activeZone].toLowerCase())
 
   if (ended) {
@@ -126,8 +168,11 @@ export default function Control({ demo = false }) {
           </p>
         </Reveal>
         <Reveal delay={0.2} className="bridge" style={{ marginTop: 18 }}>
-          <BridgeArt cables={colors.cables} towers={colors.towers} deck={colors.deck} />
+          <BridgeArt {...colors} effect={effectId} />
         </Reveal>
+        {booking?.sponsorId && (
+          <div className="credit-bar"><SponsorLine label={`${booking.dateTag} presented by`} id={booking.sponsorId} /></div>
+        )}
         <div className="fill" />
         <Reveal delay={0.28} className="footer-cta">
           <div className="btn-row">
@@ -147,42 +192,78 @@ export default function Control({ demo = false }) {
     )
   }
 
+  const tabs = [
+    { id: 'colors', label: 'Colors', Icon: Palette },
+    { id: 'effects', label: 'Effects', Icon: Sparkles },
+    ...(isDesign ? [] : [{ id: 'music', label: 'Music', Icon: Music }]),
+  ]
+
   return (
     <div className="screen">
-      <Header title="Live control" back="/" />
+      <Header
+        title={isDesign ? 'Make it yours' : isDemo ? 'Try it' : 'Live control'}
+        back={isDesign ? '/confirmation' : '/'}
+      />
 
-      <motion.div
-        className={`timer-bar ${warn ? 'warn' : ''}`}
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-      >
-        <div>
-          <div className="timer-label">
-            <TimerReset size={11} strokeWidth={2.5} />
-            Your session
+      {isDesign ? (
+        <motion.div className="sponsor-banner" style={{ marginBottom: 14 }}
+          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+          <div>
+            <div className="sb-title">{booking.momentName || occasionById(booking.occasionId)?.name || 'Your moment'}</div>
+            <div className="sb-sub">{booking.date} · {booking.slot} · lights go live at your reserved time</div>
           </div>
-          <div className={`timer-val ${warn ? 'warn' : ''}`}>{fmt(left)}</div>
+        </motion.div>
+      ) : (
+        <motion.div
+          className={`timer-bar ${warn ? 'warn' : ''}`}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+        >
+          <div>
+            <div className="timer-label">
+              <TimerReset size={11} strokeWidth={2.5} />
+              Your session
+            </div>
+            <div className={`timer-val ${warn ? 'warn' : ''}`}>{fmt(left)}</div>
+          </div>
+          <div className="badge-live">On air</div>
+        </motion.div>
+      )}
+
+      {mode === 'live' && booking?.sponsorId && (
+        <div className="sponsor-banner" style={{ marginBottom: 14 }}>
+          <div>
+            <div className="sb-title">Tonight: {booking.dateTag}</div>
+            <div className="sb-sub">Presented by</div>
+          </div>
+          <SponsorMark id={booking.sponsorId} size="md" />
         </div>
-        <div className="badge-live">On air</div>
-      </motion.div>
+      )}
 
       <Reveal delay={0.06} className="bridge" style={{ margin: '0 0 6px' }}>
-        <BridgeArt cables={colors.cables} towers={colors.towers} deck={colors.deck} />
+        <BridgeArt {...colors} effect={effectId} active={activeZone} labels onSelect={setActiveZone} />
       </Reveal>
-      <p className="note" style={{ marginTop: 2 }}>Live preview · changes push to the Hoan Bridge</p>
+      <p className="note" style={{ marginTop: 2 }}>
+        {isDesign ? 'Preview of your moment' : 'Live preview · changes push to the Hoan Bridge'} · tap the bridge to pick a part
+      </p>
+      <div className="fx-credit">
+        {effect?.sponsorId
+          ? <><span>{effect.name}</span><SponsorLine label="made possible by" id={effect.sponsorId} /></>
+          : <span>{effect?.name}</span>}
+      </div>
 
       <Reveal delay={0.1} className="tabs" style={{ marginTop: 14 }}>
-        {tab === 'colors' && <motion.div className="tab-indicator" layoutId="tab-indicator" transition={{ type: 'spring', stiffness: 400, damping: 32 }} style={{ left: 5 }} />}
-        {tab === 'shows' && <motion.div className="tab-indicator" layoutId="tab-indicator" transition={{ type: 'spring', stiffness: 400, damping: 32 }} style={{ right: 5, left: 'auto' }} />}
-        <button className={`tab ${tab === 'colors' ? 'active' : ''}`} onClick={() => setTab('colors')}>
-          <Palette size={14} strokeWidth={2.5} />
-          Zone colors
-        </button>
-        <button className={`tab ${tab === 'shows' ? 'active' : ''}`} onClick={() => setTab('shows')}>
-          <Music size={14} strokeWidth={2.5} />
-          Play Music
-        </button>
+        {tabs.map(({ id, label, Icon }) => (
+          <button key={id} className={`tab ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>
+            {tab === id && (
+              <motion.div className="tab-indicator" layoutId="tab-indicator"
+                transition={{ type: 'spring', stiffness: 400, damping: 32 }} />
+            )}
+            <Icon size={14} strokeWidth={2.5} />
+            {label}
+          </button>
+        ))}
       </Reveal>
 
       <AnimatePresence mode="wait">
@@ -194,6 +275,16 @@ export default function Control({ demo = false }) {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.22 }}
           >
+            <p className="section-label" style={{ marginTop: 4 }}>Start from a moment</p>
+            <div className="preset-row">
+              {OCCASIONS.map((o) => (
+                <button key={o.id} className="occ-chip" onClick={() => applyOccasion(o)}>
+                  <o.icon size={15} strokeWidth={2.4} />{o.name}
+                </button>
+              ))}
+            </div>
+
+            <p className="section-label" style={{ marginTop: 14 }}>Parts of the bridge</p>
             <StaggerGroup>
               {ZONES.map((z) => (
                 <StaggerItem
@@ -203,24 +294,25 @@ export default function Control({ demo = false }) {
                   onClick={() => setActiveZone(z.id)}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <div className="zone-swatch" style={{ background: colors[z.id], '--zone-glow': colors[z.id] }} />
+                  <ZoneIcon id={z.id} color={colors[z.id]} />
                   <div className="zone-info">
                     <div className="zone-name">{z.name}</div>
                     <div className="zone-hex">{colors[z.id].toUpperCase()}</div>
+                    <div className="zone-hint">{z.hint}</div>
                   </div>
                   <input
                     className="zone-color-input"
                     type="color"
                     value={colors[z.id]}
                     onChange={(e) => { setActiveZone(z.id); setColors((c) => ({ ...c, [z.id]: e.target.value })) }}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => { e.stopPropagation(); setActiveZone(z.id) }}
                   />
                 </StaggerItem>
               ))}
             </StaggerGroup>
 
             <p className="section-label">
-              Quick palette · <span style={{ color: 'var(--brand)' }}>{ZONES.find((z) => z.id === activeZone).name}</span>
+              Quick palette · <span style={{ color: 'var(--brand)' }}>{zoneName(activeZone)}</span>
             </p>
             <StaggerGroup className="swatch-grid">
               {SWATCHES.map((hex) => (
@@ -262,12 +354,54 @@ export default function Control({ demo = false }) {
               />
             </StaggerGroup>
             <p className="note" style={{ marginTop: 14 }}>
-              Tap a zone to select it, then pick a quick color or customize your own.
+              Tap a part of the bridge to select it, then pick a quick color or customize your own.
             </p>
           </motion.div>
         )}
 
-        {tab === 'shows' && (
+        {tab === 'effects' && (
+          <motion.div
+            key="effects"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.22 }}
+          >
+            <StaggerGroup className="show-list" style={{ marginTop: 4 }}>
+              {EFFECTS.map((e) => {
+                const on = effectId === e.id
+                return (
+                  <StaggerItem
+                    key={e.id}
+                    as="button"
+                    className={`show-card ${on ? 'playing' : ''}`}
+                    onClick={() => chooseEffect(e)}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span className="show-play">
+                      {on ? <Check size={16} strokeWidth={3} /> : <Wand2 size={15} strokeWidth={2.4} />}
+                    </span>
+                    <span style={{ flex: 1 }}>
+                      <span className="show-name" style={{ display: 'block' }}>{e.name}</span>
+                      <span className="show-desc" style={{ display: 'block' }}>{e.desc}</span>
+                      {e.sponsorId && (
+                        <span className="effect-credit">
+                          <span className="effect-badge">Signature effect</span>
+                          Made possible by <SponsorMark id={e.sponsorId} size="sm" />
+                        </span>
+                      )}
+                    </span>
+                  </StaggerItem>
+                )
+              })}
+            </StaggerGroup>
+            <p className="note" style={{ marginTop: 14 }}>
+              Effects are curated by Light the Hoan to protect the experience and the existing lighting program.
+            </p>
+          </motion.div>
+        )}
+
+        {tab === 'music' && (
           <motion.div
             key="shows"
             initial={{ opacity: 0, y: 8 }}
@@ -341,6 +475,20 @@ export default function Control({ demo = false }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <div className="credit-bar" style={{ marginTop: 22 }}>
+        <SponsorLine label="Experience technology by" id="founding" />
+      </div>
+
+      {isDesign && (
+        <div className="footer-cta">
+          <motion.button className="btn btn-primary" onClick={savePlan}
+            whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}>
+            <Check size={17} strokeWidth={3} />
+            Save my lighting plan
+          </motion.button>
+        </div>
+      )}
 
       <AnimatePresence>
         {toast && (
