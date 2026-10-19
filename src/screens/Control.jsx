@@ -153,7 +153,7 @@ export default function Control({ mode = 'live' }) {
       <div className="screen pad-top center">
         <motion.div
           className="success-ring"
-          style={{ borderColor: 'var(--warn)', color: 'var(--warn)', background: 'rgba(255,209,102,0.14)' }}
+          style={{ borderColor: '#f3cf7a', color: 'var(--warn)', background: 'var(--warn-soft)' }}
           initial={{ scale: 0, rotate: -90 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: 'spring', stiffness: 260, damping: 18 }}
@@ -171,7 +171,7 @@ export default function Control({ mode = 'live' }) {
           <BridgeArt {...colors} effect={effectId} />
         </Reveal>
         {booking?.sponsorId && (
-          <div className="credit-bar"><SponsorLine label={`${booking.dateTag} presented by`} id={booking.sponsorId} /></div>
+          <div className="credit-bar"><SponsorLine label={`${booking.dateTag} presented by`} id={booking.sponsorId} size="lg" /></div>
         )}
         <div className="fill" />
         <Reveal delay={0.28} className="footer-cta">
@@ -198,12 +198,18 @@ export default function Control({ mode = 'live' }) {
     ...(isDesign ? [] : [{ id: 'music', label: 'Music', Icon: Music }]),
   ]
 
+  // The sponsor on screen: tonight's Experience Night sponsor in a live session, else the founding partner.
+  const bannerSponsor = mode === 'live' && booking?.sponsorId ? booking.sponsorId : 'founding'
+
   return (
-    <div className="screen">
+    <div className="screen wide">
       <Header
         title={isDesign ? 'Make it yours' : isDemo ? 'Try it' : 'Live control'}
         back={isDesign ? '/confirmation' : '/'}
       />
+
+      <div className="two-col">
+      <div className="col sticky">
 
       {isDesign ? (
         <motion.div className="sponsor-banner" style={{ marginBottom: 14 }}
@@ -231,17 +237,19 @@ export default function Control({ mode = 'live' }) {
         </motion.div>
       )}
 
-      {mode === 'live' && booking?.sponsorId && (
-        <div className="sponsor-banner" style={{ marginBottom: 14 }}>
-          <div>
-            <div className="sb-title">Tonight: {booking.dateTag}</div>
-            <div className="sb-sub">Presented by</div>
+      <div className="sponsor-banner accent stack">
+        <div>
+          <div className="sb-title">
+            {mode === 'live' && booking?.sponsorId ? `Tonight: ${booking.dateTag}` : 'Experience technology'}
           </div>
-          <SponsorMark id={booking.sponsorId} size="md" />
+          <div className="sb-sub">
+            {SPONSORS[bannerSponsor].placeholder ? 'Made possible by' : 'Presented by'} · {SPONSORS[bannerSponsor].role}
+          </div>
         </div>
-      )}
+        <SponsorMark id={bannerSponsor} size="xl" block />
+      </div>
 
-      <Reveal delay={0.06} className="bridge" style={{ margin: '0 0 6px' }}>
+      <Reveal delay={0.06} className="bridge">
         <BridgeArt {...colors} effect={effectId} active={activeZone} labels onSelect={setActiveZone} />
       </Reveal>
       <p className="note" style={{ marginTop: 2 }}>
@@ -249,11 +257,14 @@ export default function Control({ mode = 'live' }) {
       </p>
       <div className="fx-credit">
         {effect?.sponsorId
-          ? <><span>{effect.name}</span><SponsorLine label="made possible by" id={effect.sponsorId} /></>
+          ? <><span>{effect.name}</span><SponsorLine label="made possible by" id={effect.sponsorId} size="md" /></>
           : <span>{effect?.name}</span>}
       </div>
 
-      <Reveal delay={0.1} className="tabs" style={{ marginTop: 14 }}>
+      </div>
+
+      <div className="col">
+      <Reveal delay={0.1} className="tabs">
         {tabs.map(({ id, label, Icon }) => (
           <button key={id} className={`tab ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>
             {tab === id && (
@@ -290,7 +301,7 @@ export default function Control({ mode = 'live' }) {
                 <StaggerItem
                   key={z.id}
                   className="zone-row"
-                  style={{ borderColor: activeZone === z.id ? 'var(--brand)' : 'var(--line)' }}
+                  style={{ borderColor: activeZone === z.id ? 'var(--brand)' : undefined, boxShadow: activeZone === z.id ? '0 0 0 1px var(--brand)' : undefined }}
                   onClick={() => setActiveZone(z.id)}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -476,8 +487,7 @@ export default function Control({ mode = 'live' }) {
         )}
       </AnimatePresence>
 
-      <div className="credit-bar" style={{ marginTop: 22 }}>
-        <SponsorLine label="Experience technology by" id="founding" />
+      </div>
       </div>
 
       {isDesign && (

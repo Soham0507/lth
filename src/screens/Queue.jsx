@@ -102,7 +102,7 @@ export default function Queue() {
       </Reveal>
 
       {booking.sponsorId && (
-        <div className="credit-bar"><SponsorLine label={`${booking.dateTag} presented by`} id={booking.sponsorId} /></div>
+        <div className="credit-bar"><SponsorLine label={`${booking.dateTag} presented by`} id={booking.sponsorId} size="lg" /></div>
       )}
 
       <div className="fill" />
@@ -110,7 +110,7 @@ export default function Queue() {
       <div className="footer-cta">
         <motion.button className="btn btn-primary" disabled={!yourTurn} onClick={() => navigate('/control')}
           whileHover={yourTurn ? { y: -2 } : {}} whileTap={yourTurn ? { scale: 0.97 } : {}}
-          animate={yourTurn ? { boxShadow: ['0 0 0px rgba(0,168,225,0)', '0 0 22px rgba(0,168,225,0.5)', '0 0 0px rgba(0,168,225,0)'] } : {}}
+          animate={yourTurn ? { boxShadow: ['0 0 0 0 rgba(10,127,192,0.4)', '0 0 0 10px rgba(10,127,192,0)', '0 0 0 0 rgba(10,127,192,0)'] } : {}}
           transition={yourTurn ? { duration: 1.6, repeat: Infinity } : {}}>
           {yourTurn ? <><Play size={17} strokeWidth={2.5} />Start my session</> : `Waiting · ${pos} ahead`}
         </motion.button>

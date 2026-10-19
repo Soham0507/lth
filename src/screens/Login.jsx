@@ -31,7 +31,6 @@ export default function Login() {
       <Header title="Sign in" back="/" />
 
       <Reveal style={{ marginTop: 8 }}>
-        <img src="/lth-logo.png" alt="Light the Hoan" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
         <h2 className="h1" style={{ fontSize: 24, marginTop: 14 }}>Welcome back</h2>
         <p className="lead">Sign in to book a session and light up the Hoan.</p>
       </Reveal>

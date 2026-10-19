@@ -4,15 +4,14 @@ import { Cake, Gem, Baby, HeartHandshake, Building2, Heart } from 'lucide-react'
 import { DATES, SLOTS } from './dummy.js'
 
 // ── Sponsors ─────────────────────────────────────────────────────────────────
-// `founding` is intentionally a blank "YOUR LOGO HERE" slot so no one company appears to own
-// the Founding Technology Partner opportunity. To use a real logo, drop a transparent PNG at
-// public/sponsors/<id>.png (e.g. public/sponsors/weenergies.png) — the wordmark falls back
-// to text when no file exists.
+// Logos live at public/sponsors/<logo ?? id>.png; the wordmark falls back to text when no file exists.
+// `founding` is a group: its logos render side by side at identical size.
 export const SPONSORS = {
-  founding: { id: 'founding', name: 'YOUR LOGO HERE', role: 'Founding Technology Partner', placeholder: true },
+  // Founding Technology Partners are shown together, as equals.
+  founding: { id: 'founding', name: 'We Energies & Visit Milwaukee', role: 'Founding Technology Partners', group: ['weenergies', 'visitmke'] },
   weenergies: { id: 'weenergies', name: 'We Energies', role: 'Experience Night Series' },
   molsoncoors: { id: 'molsoncoors', name: 'Molson Coors', role: 'Signature Experience' },
-  visitmke: { id: 'visitmke', name: 'Visit Milwaukee', role: 'Visitor Moments' },
+  visitmke: { id: 'visitmke', name: 'Visit Milwaukee', role: 'Visitor Moments', dark: true },
 }
 
 // ── Occasions (the emotional use cases from the sponsorship deck) ────────────

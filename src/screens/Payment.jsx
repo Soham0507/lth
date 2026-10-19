@@ -122,7 +122,7 @@ export default function Payment() {
             Dummy checkout · test card prefilled · no real charge
           </p>
           <div className="credit-bar" style={{ marginTop: 10 }}>
-            <SponsorLine label="Experience technology by" id="founding" />
+            <SponsorLine label="Experience technology by" id="founding" size="lg" />
           </div>
         </div>
       </Reveal>

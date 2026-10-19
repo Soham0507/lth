@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { useApp } from './context/AppContext.jsx'
 import PageTransition from './components/PageTransition.jsx'
+import TopBar from './components/TopBar.jsx'
 import Home from './screens/Home.jsx'
 import Login from './screens/Login.jsx'
 import Booking from './screens/Booking.jsx'
@@ -19,7 +21,11 @@ const page = (el) => <PageTransition>{el}</PageTransition>
 
 export default function App() {
   const location = useLocation()
+  // Each screen starts at the top (unless jumping to an in-page anchor).
+  useEffect(() => { if (!location.hash) window.scrollTo(0, 0) }, [location.pathname, location.hash])
   return (
+    <>
+    <TopBar />
     <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={page(<Home />)} />
@@ -34,5 +40,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
+    </>
   )
 }

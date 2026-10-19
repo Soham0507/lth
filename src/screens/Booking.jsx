@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Calendar, Clock, HandCoins, Star, Check, ArrowRight, PartyPopper, X } from 'lucide-react'
+import { Calendar, Clock, HandCoins, Check, ArrowRight, PartyPopper, X } from 'lucide-react'
 import Header from '../components/Header.jsx'
 import BridgePreview from '../components/BridgePreview.jsx'
-import { SponsorMark, SponsorLine } from '../components/SponsorMark.jsx'
+import { SponsorMark } from '../components/SponsorMark.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { Reveal, StaggerGroup, StaggerItem } from '../components/Reveal.jsx'
 import { DATES, SLOTS, DONATION_TIERS, ZONES } from '../data/dummy.js'
@@ -72,7 +72,7 @@ export default function Booking() {
       <Header title="Book a session" back="/" />
 
       {experience && (
-        <Reveal className="sponsor-banner" style={{ marginTop: 4 }}>
+        <Reveal className="sponsor-banner accent" style={{ marginTop: 0 }}>
           <div>
             <div className="sb-title">{experience.title}</div>
             <div className="sb-sub">
@@ -80,7 +80,7 @@ export default function Booking() {
             </div>
           </div>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <SponsorMark id={experience.sponsorId} size="sm" />
+            <SponsorMark id={experience.sponsorId} size="lg" />
             <button className="iconbtn ghost" style={{ width: 28, height: 28 }} aria-label="Remove experience"
               onClick={() => setIntent({ ...intent, experienceId: null })}>
               <X size={15} strokeWidth={2.5} />
@@ -132,10 +132,13 @@ export default function Booking() {
         ))}
       </StaggerGroup>
       {selectedDate?.tag && (
-        <motion.div key={selectedDate.id} style={{ marginTop: 10, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}
-          initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-          <span className="chip warn"><Star size={11} strokeWidth={2.5} /> {selectedDate.tag}</span>
-          <SponsorLine label="Presented by" id={selectedDate.sponsorId} />
+        <motion.div key={selectedDate.id} className="sponsor-banner accent" style={{ marginTop: 12 }}
+          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+          <div>
+            <div className="sb-title">{selectedDate.tag}</div>
+            <div className="sb-sub">{selectedDate.label} · Experience Night · {SPONSORS[selectedDate.sponsorId].placeholder ? 'made possible by' : 'presented by'}</div>
+          </div>
+          <SponsorMark id={selectedDate.sponsorId} size="lg" />
         </motion.div>
       )}
 
